@@ -1,0 +1,105 @@
+<!-- I used this code to help me with project- https://codepen.io/livecodestream/pen/JjGyoMv-->
+
+<html>
+<div><img id="x" src="blue.png"></div>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script src="https://unpkg.com/@tensorflow-models/speech-commands"></script>
+
+    <script type="text/javascript">
+        let recognizer;
+        let words;
+        var uu=0;
+        const wordList = ["left", "right"];
+        let modelLoaded = false;
+        function ReplacingImage(){
+            if (uu===1) {
+                document.getElementById("x").src = "red.png"}
+            
+            if(uu===2){
+                document.getElementById("x").src = "yellow.png"}
+
+            if(uu===0){
+                document.getElementById("x").src = "blue.png"}
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const wrapperElement = document.getElementById('sp-cmd-wrapper');
+            for (let word of wordList) {
+                wrapperElement.innerHTML += `<div class='col-3 col-md-6'><div id='word-${word}' class='badge'>${word}</div></div>`;
+            };
+
+            document.getElementById("audio-switch").addEventListener('change', (event) => {
+                if(event.target.checked) {
+                    if(modelLoaded) {
+                        RecognizWords();
+                    }else{
+                        Model();
+                        
+                    }
+                } else {
+                    stopListening();
+                }
+            });
+        });
+
+        async function Model() {
+         
+            const loadingElement = document.getElementById('demo-loading');
+            loadingElement.classList.remove('hidden');
+            recognizer = speechCommands.create("BROWSER_FFT");
+            await recognizer.ensureModelLoaded()
+
+            words = recognizer.wordLabels();
+            modelLoaded = true;
+
+            loadingElement.classList.add('hidden');
+            RecognizWords();
+        }
+
+        function RecognizWords() {
+            recognizer.listen(({scores}) => {
+   
+                    scores = Array.from(scores).map((s, i) => ({score: s, word: words[i]}));
+                    scores.sort((s1, s2) => s2.score - s1.score);
+                    const elementId = `word-${scores[0].word}`;
+                    document.getElementById(elementId).classList.add('active');
+                    if(elementId === "word-right") {
+                        uu=uu+1;
+                        ReplacingImage();
+                    }
+
+                    if(elementId === "word-left") {
+                        uu=uu-1;
+                        ReplacingImage();
+                    }
+
+            
+                    setTimeout(() => {
+                        document.getElementById(elementId).classList.remove('active');
+                    }, 2500);
+                },
+                {
+                    probabilityThreshold: .90
+                });
+        }
+
+        function stopListening(){
+            recognizer.stopListening();
+        }
+    </script>
+</head>
+<body>
+<div class="demo">
+    
+    <br /> <br /><br />
+    <div>
+        <label class="form-switch">
+            <input type="checkbox" id="audio-switch">
+            
+        </label>
+        <div id="demo-loading" class="hidden"></div>
+    </div>
+    <div id="sp-cmd-wrapper" class="grid"></div>
+</div>
+</body>
+</html>
